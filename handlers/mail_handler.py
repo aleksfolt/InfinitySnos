@@ -7,7 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from database.db import save_data_mail, load_data_mail, load_template_texts
 from states import Form
-
+import asyncio
 import smtplib
 from email.mime.text import MIMEText
 
@@ -44,15 +44,20 @@ async def send_email(subject: str, body: str, sender: str, recipients: list):
             msg['From'] = email_address
             msg['To'] = recipient
 
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(email_address, email_password)
-                server.sendmail(email_address, recipient, msg.as_string())
-            print("Сообщение отправлено от {email_address} на {recipient}")
-            return f"Сообщение отправлено от {email_address} на {recipient}"
+            await asyncio.to_thread(send_email_smtp, smtp_server, smtp_port, email_address, email_password, recipient, msg)
+
+        print(f"Сообщение отправлено от {email_address} на {recipient}")
+        return f"Сообщение отправлено от {email_address} на {recipient}"
     except Exception as e:
         print(f"Ошибка при отправке: {e}")
         return f"Ошибка при отправке: {e}"
+
+
+def send_email_smtp(smtp_server, smtp_port, email_address, email_password, recipient, msg):
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(email_address, email_password)
+        server.sendmail(email_address, recipient, msg.as_string())
 
 
 @mail_router.callback_query(lambda call: call.data == "mail")
