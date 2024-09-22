@@ -62,6 +62,7 @@ async def mail_main(callback: CallbackQuery):
     builder.row(InlineKeyboardButton(text="Добавить почту", callback_data="setupemail"))
     builder.add(InlineKeyboardButton(text="Очистить почты", callback_data="delete_all_mails"))
     builder.add(InlineKeyboardButton(text="Мои почты", callback_data="listmail"))
+    builder.row(InlineKeyboardButton(text="Назад", callback_data="back"))
     await callback.message.edit_text("Управление почтами:", reply_markup=builder.as_markup())
 
 
