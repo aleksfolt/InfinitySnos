@@ -16,7 +16,7 @@ async def start_handler(msg: Message):
         data["users"].append(msg.from_user.id)
         save_data(data)
     photo = FSInputFile("assets/img.png")
-    await msg.bot.send_photo(
+    """await msg.bot.send_photo(
         chat_id=msg.chat.id,
         photo=photo,
         caption=f"Добро пожаловать.\n"
@@ -26,11 +26,11 @@ async def start_handler(msg: Message):
                 f"Разработчик: @folted",
         reply_markup=await start_kb(msg),
         parse_mode=ParseMode.MARKDOWN
-    )
+    )"""
 
-    """await msg.answer(text=f"Добро пожаловать.\n"
+    await msg.answer(text=f"Добро пожаловать.\n"
                           f"- пользователей: {len(data['users'])}\n"
                           f"- прокси: {proxy_count}\n"
                           f"- версия бота: 0.3\n\n"
                           f"Разработчик: @folted",
-                     reply_markup=await start_kb(msg), parse_mode=ParseMode.MARKDOWN)"""
+                     reply_markup=await start_kb(msg), parse_mode=ParseMode.MARKDOWN)
