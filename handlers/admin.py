@@ -10,7 +10,7 @@ from database.banned import unban_user, ban_user
 from database.db import load_data, load_data_mail
 from kb import admin_panel
 
-ADMIN_ID = 7166220534
+ADMINS_ID = [6184515646, 7166220534]
 
 class MassMessageForm(StatesGroup):
     text = State()
@@ -23,7 +23,7 @@ mass_router = Router()
 
 @mass_router.message(Command("admin"))
 async def start_mass_message(message: types.Message):
-    if message.from_user.id != ADMIN_ID:
+    if message.from_user.id not in ADMINS_ID:
         await message.answer("У вас нет прав для использования этой команды.")
         return
 
@@ -36,7 +36,7 @@ async def mailing_handler(callback: CallbackQuery, state: FSMContext):
 
 @mass_router.callback_query(lambda call: call.data == 'mailing')
 async def mailing_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите текст для рассылки:")
+    await callback.message.answer("Введите текст для рассылки:")не дое
     await state.set_state(MassMessageForm.text)
 
 
@@ -69,7 +69,6 @@ async def mails_get(message: types.Message, state: FSMContext):
     else:
         await message.answer(f"Пользователь с ID {user_id} не найден.")
 
-    # Очистка состояния
     await state.clear()
 
 
