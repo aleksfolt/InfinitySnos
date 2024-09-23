@@ -26,7 +26,11 @@ def get_smtp_settings(email: str):
     domain = email.split('@')[-1]
     return SMTP_SETTINGS.get(domain, None)
 
-
+def send_email_smtp(smtp_server, smtp_port, email_address, email_password, recipient, msg):
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(email_address, email_password)
+        server.sendmail(email_address, recipient, msg.as_string())
 
 async def send_email(subject: str, body: str, sender: str, recipients: list):
     try:
@@ -46,18 +50,42 @@ async def send_email(subject: str, body: str, sender: str, recipients: list):
 
             await asyncio.to_thread(send_email_smtp, smtp_server, smtp_port, email_address, email_password, recipient, msg)
 
-        print(f"Сообщение отправлено от {email_address} на {recipient}")
-        return f"Сообщение отправлено от {email_address} на {recipient}"
+        print(f"Сообщение отправлено от {email_address} на {recipients}")
+        return f"Сообщение отправлено от {email_address} на {recipients}"
     except Exception as e:
         print(f"Ошибка при отправке: {e}")
         return f"Ошибка при отправке: {e}"
 
 
-def send_email_smtp(smtp_server, smtp_port, email_address, email_password, recipient, msg):
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
-        server.login(email_address, email_password)
-        server.sendmail(email_address, recipient, msg.as_string())
+async def process_emails_and_send_reports(message: Message, state: FSMContext, report_text: str):
+    user_id = message.from_user.id
+    data = load_data_mail()
+
+    if str(user_id) not in data['users'] or not data['users'][str(user_id)]["emails"]:
+        await message.answer("У вас нет добавленных почт для отправки.")
+        await state.clear()
+        return
+
+    recipients = ['stopCA@telegram.org', 'dmca@telegram.org', 'abuse@telegram.org', 'sticker@telegram.org',
+                  'support@telegram.org']
+
+    successful_count = 0
+    mail_results = []
+
+    for email in data['users'][str(user_id)]["emails"]:
+        for recipient in recipients:
+            result = await send_email(subject="Жалоба", body=report_text, sender=email, recipients=[recipient])
+            mail_results.append(result)
+            if "Сообщение отправлено" in result:
+                successful_count += 1
+
+    if successful_count > 0:
+        await message.answer(
+            f"Успешно отправлено {successful_count} писем от {len(data['users'][str(user_id)]['emails'])} почт.")
+    else:
+        await message.answer(f"Не удалось отправить письма.")
+    await state.clear()
+
 
 
 @mail_router.callback_query(lambda call: call.data == "mail")
