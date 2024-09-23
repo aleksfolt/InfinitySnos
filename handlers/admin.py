@@ -36,7 +36,7 @@ async def mailing_handler(callback: CallbackQuery, state: FSMContext):
 
 @mass_router.callback_query(lambda call: call.data == 'mailing')
 async def mailing_handler(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите текст для рассылки:")не дое
+    await callback.message.answer("Введите текст для рассылки:")
     await state.set_state(MassMessageForm.text)
 
 
