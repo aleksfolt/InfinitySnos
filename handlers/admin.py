@@ -2,28 +2,75 @@ import asyncio
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from database.db import load_data
+from database.banned import unban_user, ban_user
+from database.db import load_data, load_data_mail
+from kb import admin_panel
 
 ADMIN_ID = 7166220534
 
 class MassMessageForm(StatesGroup):
     text = State()
     inline_button = State()
+    mails = State()
+    ban_user = State()
+    unban_user = State()
 
 mass_router = Router()
 
-@mass_router.message(Command("rassil"))
-async def start_mass_message(message: types.Message, state: FSMContext):
+@mass_router.message(Command("admin"))
+async def start_mass_message(message: types.Message):
     if message.from_user.id != ADMIN_ID:
         await message.answer("У вас нет прав для использования этой команды.")
         return
 
-    await message.answer("Введите текст для рассылки:")
+    await message.answer("Привет админ!", reply_markup=await admin_panel())
+
+@mass_router.callback_query(lambda call: call.data == 'mails')
+async def mailing_handler(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer("Введите user_id пользователя для просмотра почт:")
+    await state.set_state(MassMessageForm.mails)
+
+@mass_router.callback_query(lambda call: call.data == 'mailing')
+async def mailing_handler(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer("Введите текст для рассылки:")
     await state.set_state(MassMessageForm.text)
+
+
+@mass_router.callback_query(lambda call: call.data == 'ban')
+async def ban_callback(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer("Введите user_id для бана:")
+    await state.set_state(MassMessageForm.ban_user)
+
+
+@mass_router.callback_query(lambda call: call.data == 'unban')
+async def unban_callback(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer("Введите user_id для разбана:")
+    await state.set_state(MassMessageForm.unban_user)
+
+@mass_router.message(MassMessageForm.mails)
+async def mails_get(message: types.Message, state: FSMContext):
+    user_id = message.text.strip()
+
+    data = load_data_mail()
+
+    user_data = data.get("users", {}).get(user_id)
+
+    if user_data and "emails" in user_data:
+        emails = user_data["emails"]
+        if emails:
+            email_list = "\n".join(emails)
+            await message.answer(f"Почты для пользователя {user_id}:\n{email_list}")
+        else:
+            await message.answer(f"У пользователя {user_id} нет почт.")
+    else:
+        await message.answer(f"Пользователь с ID {user_id} не найден.")
+
+    # Очистка состояния
+    await state.clear()
 
 
 @mass_router.message(MassMessageForm.text)
@@ -67,3 +114,21 @@ async def process_inline_button(message: types.Message, state: FSMContext):
     await message.answer(f"Рассылка завершена.\nОтправлено: {sent_count}\nНе отправлено: {failed_count}")
     await state.clear()
 
+
+@mass_router.message(MassMessageForm.ban_user)
+async def process_ban_user(message: types.Message, state: FSMContext):
+    user_id = message.text.strip()
+
+    ban_user(user_id)
+    await message.answer(f"Пользователь {user_id} забанен.")
+
+    await state.clear()
+
+
+@mass_router.message(MassMessageForm.unban_user)
+async def process_unban_user(message: types.Message, state: FSMContext):
+    user_id = message.text.strip()
+
+    unban_user(user_id)
+    await message.answer(f"Пользователь {user_id} разбанен.")
+    await state.clear()
