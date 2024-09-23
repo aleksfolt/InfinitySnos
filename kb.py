@@ -23,3 +23,13 @@ async def get_post_send_keyboard():
     keyboard.add(types.InlineKeyboardButton(text="История", callback_data="history"))
     keyboard.add(types.InlineKeyboardButton(text="Назад", callback_data="back"))
     return keyboard.as_markup()
+
+
+async def admin_panel():
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(text="Рассылка", callback_data="mailing"))
+    builder.add(types.InlineKeyboardButton(text="Почты", callback_data="mails"))
+    builder.add(types.InlineKeyboardButton(text="Бан", callback_data="ban"))
+    builder.add(types.InlineKeyboardButton(text="Разбан", callback_data="unban"))
+    builder.adjust(2, 2)
+    return builder.as_markup()
